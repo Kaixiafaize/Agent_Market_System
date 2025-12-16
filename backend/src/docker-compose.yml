@@ -1,0 +1,71 @@
+version: "3.8"
+
+# 服务配置（通用前缀：dev-xxx，适配多项目复用）
+services:
+  # PostgreSQL 数据库（通用命名，可支撑多项目）
+  dev-postgres:
+    image: postgres:16
+    container_name: dev-postgres
+    environment:
+      POSTGRES_USER: zjw                # 自定义开发用户名
+      POSTGRES_PASSWORD: 123456         # 注意：生产环境务必替换为强密码
+      POSTGRES_DB: paper_mvp            # 当前MVP库名（后续新增项目可手动建库）
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --lc-collate=C --lc-ctype=C  # 彻底解决中文乱码
+      TZ: Asia/Shanghai                 # 统一时区，避免时间戳不一致
+    volumes:
+      - dev-postgres-data:/var/lib/postgresql/data  # 数据持久化卷
+    ports:
+      - "5432:5432"  # 本地映射端口，多项目可改为 5433/5434 等
+    restart: always  # 容器异常退出自动重启
+    networks:
+      - dev-shared-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'    # 限制CPU使用，避免占满主机资源
+          memory: 1G   # 限制内存使用
+    healthcheck:       # 健康检查，确保数据库启动完成再对外提供服务
+      test: ["CMD-SHELL", "pg_isready -U zjw -d paper_mvp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存/队列（通用命名，多项目复用）
+  dev-redis:
+    image: redis:5.0.8
+    container_name: dev-redis
+    command: >
+      redis-server 
+      --requirepass 123456 
+      --appendonly yes 
+      --appendfsync everysec 
+    volumes:
+      - dev-redis-data:/data  # 数据持久化卷（开启AOF后数据不丢失）
+    ports:
+      - "6379:6379"  # 本地映射端口，多项目可改为 6380/6381 等
+    restart: always
+    networks:
+      - dev-shared-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:       # 健康检查，确保Redis启动完成
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# 数据卷（显式命名，避免Docker自动生成随机名，便于管理）
+volumes:
+  dev-postgres-data:
+    name: dev-postgres-data
+  dev-redis-data:
+    name: dev-redis-data
+
+# 通用共享网络（所有开发环境服务加入此网络，互通无需暴露端口）
+networks:
+  dev-shared-network:
+    name: dev-shared-network
+    driver: bridge

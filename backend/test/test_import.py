@@ -5,3 +5,4 @@ try:
     print("✅ 导入成功！LangChain 安装正常")
 except ImportError as e:
     print(f"❌ 导入失败：{e}")
+    print(1)

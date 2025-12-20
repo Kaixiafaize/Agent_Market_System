@@ -1,8 +1,8 @@
 #!/bin/bash
 # 极简启动：Celery + FastAPI
-export PYTHONPATH="/workspaces/Agent_Market_System/backend:$PYTHONPATH"
-source /workspaces/Agent_Market_System/myenv/bin/activate
-cd /workspaces/Agent_Market_System/backend || exit
+export PYTHONPATH="/home/zjw/project/Agent_Market_System/backend:$PYTHONPATH"
+source /home/zjw/project/Agent_Market_System/.venv/bin/activate
+cd /home/zjw/project/Agent_Market_System/backend || exit
 
 # 杀残留进程
 pkill -f "celery -A src.core.celery worker" >/dev/null 2>&1
